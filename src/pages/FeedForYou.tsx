@@ -23,9 +23,11 @@ const FeedForYou: React.FC = () => {
     setLoading(true);
     getForYouFeed()
       .then((data: FeedResponse) => {
-        if ("detail" in data) {
+        if ("detail" in data && data.detail) {
           setMessage(data.detail);
           setPost(null);
+        }else if ("error" in data && data.error){
+            setError(data.error);
         } else {
           setPost(data);
           setMessage("");
