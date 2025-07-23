@@ -1,3 +1,18 @@
+export interface Profile {
+  username?: string | null;
+  full_name?: string | null;
+  bio?: string | null;
+  profile_picture?: string | null;
+  body_type?: string | null;
+  height?: number | null;
+  weight?: number | null;
+  themes: string[];
+}
+
+export interface UpdateProfile extends Partial<Omit<Profile, 'themes'>> {
+  themes?: string[];
+}
+
 export interface Post {
   id: number;
   author_id: string;
@@ -12,4 +27,12 @@ export interface Post {
   shares_count: number;
   liked: boolean;
   saved: boolean;
+}
+
+export interface Comment {
+  id: number;
+  user_id: string;
+  username: string;
+  text: string;
+  created_at: string;
 }
