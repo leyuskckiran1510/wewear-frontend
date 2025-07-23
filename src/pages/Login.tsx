@@ -1,14 +1,21 @@
-import React, { useState } from "react";
+import React, { useEffect,useState } from "react";
 import { requestOTP, verifyOTP } from "@/services/authService";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
+  
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"request" | "verify">("request");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      navigate("/profile", { replace: true });
+    }
+  }, [navigate]);
 
   const handleRequestOTP = async () => {
     setLoading(true);

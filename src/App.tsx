@@ -5,6 +5,7 @@ import { Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import FeedForYou from "./pages/FeedForYou";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 const App = () => {
   return (
@@ -12,8 +13,16 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/feeds/foryou" element={<FeedForYou />} />
+        <Route path="/profile" element={
+             <ProtectedRoute>
+                <Profile />
+          </ProtectedRoute>
+        } />
+        <Route path="/feeds/foryou" element={
+            <ProtectedRoute>
+              <FeedForYou />
+            </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );
