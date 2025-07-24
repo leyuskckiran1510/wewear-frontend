@@ -9,6 +9,7 @@ const isAuthenticated = () => !!localStorage.getItem("token");
 
 const ProtectedRoute: React.FC < ProtectedRouteProps > = ({ children }) => {
     if (!isAuthenticated()) {
+        toast.error("Must login")
         return <Navigate to="/login" replace />;
     }
     return children;

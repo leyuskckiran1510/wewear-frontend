@@ -13,3 +13,7 @@ export const verifyOTP = (data: { email ? : string;phone ? : string;code: string
         return res.data;
     });
 };
+
+export const logout = () => {
+  localStorage.removeItem("token");
+};

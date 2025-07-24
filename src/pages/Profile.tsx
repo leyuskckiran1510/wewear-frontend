@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { getProfile, updateProfile, Profile } from "@/services/profileServices";
+import { useLoader } from "@/context/LoaderContext";
+import toast from "react-hot-toast";
 
 const Profile = () => {
     const [profile, setProfile] = useState < Profile | null > (null);
-    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState("");
+    const { showLoader, hideLoader } = useLoader();
 
     useEffect(() => {
-        setLoading(true);
+        showLoader();
         getProfile()
             .then(setProfile)
-            .catch(() => setError("Failed to load profile"))
-            .finally(() => setLoading(false));
+            .catch(() => toast.error("Failed to load profile"))
+            .finally(() => hideLoader());
     }, []);
 
     const handleChange = (field: keyof Profile, value: any) => {
@@ -23,18 +24,22 @@ const Profile = () => {
     const handleSave = async () => {
         if (!profile) return;
         setSaving(true);
-        setError("");
+        toast("Saving...",{
+            duration: 300
+        });
+        let save_success = false;
         try {
             const updated = await updateProfile(profile);
             setProfile(updated);
+            save_success=true;
         } catch {
-            setError("Failed to save profile");
+            toast.error("Failed to save profile");
         } finally {
+            if(save_success) toast.success("Profile saved sucessfully");
             setSaving(false);
         }
     };
 
-    if (loading) return <div>Loading profile...</div>;
     if (!profile) return <div>No profile data</div>;
 
     return (
@@ -100,8 +105,6 @@ const Profile = () => {
       <button onClick={handleSave} disabled={saving}>
         {saving ? "Saving..." : "Save Profile"}
       </button>
-
-      {error && <div style={{ color: "red", marginTop: 10 }}>{error}</div>}
     </div>
     );
 };

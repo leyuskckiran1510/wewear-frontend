@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { requestOTP, verifyOTP } from "@/services/authService";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const Login = () => {
 
@@ -8,7 +9,6 @@ const Login = () => {
     const [code, setCode] = useState("");
     const [step, setStep] = useState < "request" | "verify" > ("request");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -19,13 +19,11 @@ const Login = () => {
 
     const handleRequestOTP = async () => {
         setLoading(true);
-        setError("");
         try {
             await requestOTP({ phone });
             setStep("verify");
         } catch (err) {
-            console.log(":here", err);
-            setError("Failed to request OTP");
+            toast.error("Failed to request OTP");
         } finally {
             setLoading(false);
         }
@@ -33,12 +31,11 @@ const Login = () => {
 
     const handleVerifyOTP = async () => {
         setLoading(true);
-        setError("");
         try {
             await verifyOTP({ phone, code });
             navigate("/profile");
         } catch (err) {
-            setError("Failed to verify OTP");
+            toast.error("Failed to verify OTP");
         } finally {
             setLoading(false);
         }
@@ -73,7 +70,6 @@ const Login = () => {
           </button>
         </>
       )}
-      {error && <div style={{ color: "red", marginTop: 10 }}>{error}</div>}
     </div>
     );
 };
