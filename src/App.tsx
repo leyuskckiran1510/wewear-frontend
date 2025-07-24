@@ -8,8 +8,8 @@ import FeedForYou from "./pages/FeedForYou";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 const App = () => {
-  return (
-    <Router>
+    return (
+        <Router>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
@@ -25,7 +25,7 @@ const App = () => {
         } />
       </Routes>
     </Router>
-  );
+    );
 };
 
 export default App;

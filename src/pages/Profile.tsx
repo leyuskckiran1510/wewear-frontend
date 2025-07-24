@@ -2,43 +2,43 @@ import React, { useEffect, useState } from "react";
 import { getProfile, updateProfile, Profile } from "@/services/profileServices";
 
 const Profile = () => {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+    const [profile, setProfile] = useState < Profile | null > (null);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
 
-  useEffect(() => {
-    setLoading(true);
-    getProfile()
-      .then(setProfile)
-      .catch(() => setError("Failed to load profile"))
-      .finally(() => setLoading(false));
-  }, []);
+    useEffect(() => {
+        setLoading(true);
+        getProfile()
+            .then(setProfile)
+            .catch(() => setError("Failed to load profile"))
+            .finally(() => setLoading(false));
+    }, []);
 
-  const handleChange = (field: keyof Profile, value: any) => {
-    if (!profile) return;
-    setProfile({ ...profile, [field]: value });
-  };
+    const handleChange = (field: keyof Profile, value: any) => {
+        if (!profile) return;
+        setProfile({ ...profile, [field]: value });
+    };
 
-  const handleSave = async () => {
-    if (!profile) return;
-    setSaving(true);
-    setError("");
-    try {
-      const updated = await updateProfile(profile);
-      setProfile(updated);
-    } catch {
-      setError("Failed to save profile");
-    } finally {
-      setSaving(false);
-    }
-  };
+    const handleSave = async () => {
+        if (!profile) return;
+        setSaving(true);
+        setError("");
+        try {
+            const updated = await updateProfile(profile);
+            setProfile(updated);
+        } catch {
+            setError("Failed to save profile");
+        } finally {
+            setSaving(false);
+        }
+    };
 
-  if (loading) return <div>Loading profile...</div>;
-  if (!profile) return <div>No profile data</div>;
+    if (loading) return <div>Loading profile...</div>;
+    if (!profile) return <div>No profile data</div>;
 
-  return (
-    <div style={{ maxWidth: 500, margin: "auto", paddingTop: 30 }}>
+    return (
+        <div style={{ maxWidth: 500, margin: "auto", paddingTop: 30 }}>
       <h2>Edit Profile</h2>
       <label>Username</label>
       <input
@@ -103,7 +103,7 @@ const Profile = () => {
 
       {error && <div style={{ color: "red", marginTop: 10 }}>{error}</div>}
     </div>
-  );
+    );
 };
 
 export default Profile;

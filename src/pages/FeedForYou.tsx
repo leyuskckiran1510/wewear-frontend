@@ -2,100 +2,100 @@ import React, { useEffect, useState } from "react";
 import { getForYouFeed } from "@/services/feedService";
 import { Post } from "@/services/types";
 import {
-  likePost,
-  savePost,
-  commentPost,
-  sharePost,
+    likePost,
+    savePost,
+    commentPost,
+    sharePost,
 } from "@/services/postInteractionService";
-import { Media } from "@/components/CostumeTags"; 
+import { Media } from "@/components/CostumeTags";
 
 type FeedResponse = Post | { detail: string };
 
 const FeedForYou: React.FC = () => {
-  const [post, setPost] = useState<Post | null>(null);
-  const [message, setMessage] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [commentText, setCommentText] = useState("");
-  const [shareSlug, setShareSlug] = useState("");
+    const [post, setPost] = useState < Post | null > (null);
+    const [message, setMessage] = useState < string > ("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [commentText, setCommentText] = useState("");
+    const [shareSlug, setShareSlug] = useState("");
 
-  useEffect(() => {
-    setLoading(true);
-    getForYouFeed()
-      .then((data: FeedResponse) => {
-        if ("detail" in data && data.detail) {
-          setMessage(data.detail);
-          setPost(null);
-        }else if ("error" in data && data.error){
-            setError(data.error);
-        } else {
-          setPost(data);
-          setMessage("");
-        }
-      })
-      .catch(() => setError("Failed to load feed"))
-      .finally(() => setLoading(false));
-  }, []);
+    useEffect(() => {
+        setLoading(true);
+        getForYouFeed()
+            .then((data: FeedResponse) => {
+                if ("detail" in data && data.detail) {
+                    setMessage(data.detail);
+                    setPost(null);
+                } else if ("error" in data && data.error) {
+                    setError(data.error);
+                } else {
+                    setPost(data);
+                    setMessage("");
+                }
+            })
+            .catch(() => setError("Failed to load feed"))
+            .finally(() => setLoading(false));
+    }, []);
 
-  const handleLike = () => {
-    if (!post) return;
-    likePost(post.id)
-      .then(() => {
-        setPost({
-          ...post,
-          liked: !post.liked,
-          likes_count: post.likes_count + (post.liked ? -1 : 1),
-        });
-      })
-      .catch(() => alert("Failed to like post"));
-  };
+    const handleLike = () => {
+        if (!post) return;
+        likePost(post.id)
+            .then(() => {
+                setPost({
+                    ...post,
+                    liked: !post.liked,
+                    likes_count: post.likes_count + (post.liked ? -1 : 1),
+                });
+            })
+            .catch(() => alert("Failed to like post"));
+    };
 
-  const handleSave = () => {
-    if (!post) return;
-    savePost(post.id)
-      .then(() => {
-        setPost({
-          ...post,
-          saved: !post.saved,
-          saves_count: post.saves_count + (post.saved ? -1 : 1),
-        });
-      })
-      .catch(() => alert("Failed to save post"));
-  };
+    const handleSave = () => {
+        if (!post) return;
+        savePost(post.id)
+            .then(() => {
+                setPost({
+                    ...post,
+                    saved: !post.saved,
+                    saves_count: post.saves_count + (post.saved ? -1 : 1),
+                });
+            })
+            .catch(() => alert("Failed to save post"));
+    };
 
-  const handleComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!post || !commentText.trim()) return;
+    const handleComment = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!post || !commentText.trim()) return;
 
-    commentPost(post.id, commentText)
-      .then(() => {
-        setCommentText("");
-        alert("Comment posted");
-      })
-      .catch(() => alert("Failed to post comment"));
-  };
+        commentPost(post.id, commentText)
+            .then(() => {
+                setCommentText("");
+                alert("Comment posted");
+            })
+            .catch(() => alert("Failed to post comment"));
+    };
 
-  const handleShare = () => {
-    if (!post) return;
+    const handleShare = () => {
+        if (!post) return;
 
-    sharePost(post.id)
-      .then(({ slug }) => {
-        setShareSlug(slug);
-        navigator.clipboard.writeText(
-          `${window.location.origin}/api/content/share/${slug}/`
-        );
-        alert("Share link copied!");
-      })
-      .catch(() => alert("Failed to share post"));
-  };
+        sharePost(post.id)
+            .then(({ slug }) => {
+                setShareSlug(slug);
+                navigator.clipboard.writeText(
+                    `${window.location.origin}/api/content/share/${slug}/`
+                );
+                alert("Share link copied!");
+            })
+            .catch(() => alert("Failed to share post"));
+    };
 
-  if (loading) return <div>Loading post...</div>;
-  if (error) return <div style={{ color: "red" }}>{error}</div>;
-  if (message) return <div>{message}</div>;
-  if (!post) return <div>No post available.</div>;
+    if (loading) return <div>Loading post...</div>;
+    if (error) return <div style={{ color: "red" }}>{error}</div>;
+    if (message) return <div>{message}</div>;
+    if (!post) return <div>No post available.</div>;
 
-  return (
-    <div style={{ maxWidth: 600, margin: "auto", paddingTop: 30 }}>
+    return (
+        <div style={{ maxWidth: 600, margin: "auto", paddingTop: 30 }}>
       <h2>For You</h2>
       <div
         style={{
@@ -150,7 +150,7 @@ const FeedForYou: React.FC = () => {
         </div>
       </div>
     </div>
-  );
+    );
 };
 
 export default FeedForYou;
