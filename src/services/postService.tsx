@@ -57,7 +57,6 @@ export const createPostWithMultipleFiles = (
   mediaFiles: File[],
   mediaUrl?: string
 ): Promise<Post[]> => {
-  // If multiple files, create multiple posts
   const promises = mediaFiles.map(file => 
     createPost({
       caption,
