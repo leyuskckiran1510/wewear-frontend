@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 const Logout = () => {
   const navigate = useNavigate();
   useEffect(() => {
-    toast("Logginout ....");
+    toast.success("Logginout ....");
     logout();
     navigate("/login", { replace: true });
   }, [navigate]);
