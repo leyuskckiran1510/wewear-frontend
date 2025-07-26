@@ -51,7 +51,7 @@ export const Media: React.FC < Props > = ({ src, ...rest }) => {
             <img
         src={blobUrl}
         alt=""
-        style={{ maxWidth: "100%" }}
+        style={{ maxHeight: "100%" }}
         {...(rest as React.ImgHTMLAttributes<HTMLImageElement>)}
       />
         );
@@ -62,7 +62,7 @@ export const Media: React.FC < Props > = ({ src, ...rest }) => {
             <video
         src={blobUrl}
         controls
-        style={{ maxWidth: "100%" }}
+        style={{ maxHeight: "100%" }}
         {...(rest as React.VideoHTMLAttributes<HTMLVideoElement>)}
       />
         );
@@ -72,7 +72,7 @@ export const Media: React.FC < Props > = ({ src, ...rest }) => {
         return (
             <pre
         style={{
-          maxWidth: "100%",
+          maxHeight: "100%",
           overflowX: "auto",
           background: "#f4f4f4",
           padding: "10px",

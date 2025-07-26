@@ -1,0 +1,60 @@
+/* Fullscreen scroll container */
+.feed-container {
+  max-width: 100%;
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Each post takes full screen */
+.feed-post {
+  height: calc(100vh - 60px); /* minus navbar height */
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #eee;
+}
+
+.feed-media {
+    /*height: calc(100vh - 60px);*/
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000; 
+  overflow: hidden;
+  border-radius: 12px;
+}
+.feed-media > * {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.feed-info {
+  margin-top: 12px;
+  padding-bottom: 12px;
+}
+
+.feed-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.feed-caption {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.feed-themes {
+  font-size: 0.8rem;
+  color: #888;
+}

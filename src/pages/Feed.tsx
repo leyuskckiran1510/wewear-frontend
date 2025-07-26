@@ -10,6 +10,8 @@ import {
 } from "@/services/postInteractionService";
 import { useLoader } from "@/context/LoaderContext";
 import toast from "react-hot-toast";
+import "@/styles/Feed.css";
+
 
 interface Props {
   feedType: FeedType;
@@ -25,34 +27,45 @@ const Feed: React.FC<Props> = ({ feedType }) => {
   const PAGE_SIZE = 20;
 
   useEffect(() => {
-    fetchFeed();
-  }, [feedType]);
+      // Reset state when feedType changes
+      setPosts([]);
+      setOffset(0);
+      setHasMore(true);
+      setMessage("");
+      fetchFeed(0); // reset offset to 0
+    }, [feedType]);
 
-  const fetchFeed = () => {
-    showLoader();
 
-    const fetchFn =
-      feedType === "upload"
-        ? getUploadFeed(offset, PAGE_SIZE)
-        : getFeed(feedType);
+  const fetchFeed = (offsetValue: number = offset) => {
+      showLoader();
 
-    fetchFn
-      .then((data: any) => {
-        if ("detail" in data) {
-          setMessage(data.detail);
-          if (feedType === "upload") setHasMore(false);
-        } else if ("posts" in data) {
-          const paginated = data as PaginatedPosts;
-          setPosts((prev) => [...prev, ...paginated.posts]);
-          setOffset((prev) => prev + PAGE_SIZE);
-          setHasMore(paginated.posts.length === PAGE_SIZE);
-        } else {
-          setPosts((prev) => [...prev, data as Post]);
-        }
-      })
-      .catch(() => toast.error("Failed to load feed"))
-      .finally(() => hideLoader());
-  };
+      const fetchFn =
+        feedType === "upload"
+          ? getUploadFeed(offsetValue, PAGE_SIZE)
+          : getFeed(feedType);
+
+      fetchFn
+        .then((data: any) => {
+          if ("detail" in data) {
+            setMessage(data.detail);
+            if (feedType === "upload") setHasMore(false);
+          } else if ("posts" in data) {
+            const paginated = data as PaginatedPosts;
+            setPosts((prev) =>
+              offsetValue === 0 ? paginated.posts : [...prev, ...paginated.posts]
+            );
+            setOffset(offsetValue + PAGE_SIZE);
+            setHasMore(paginated.posts.length === PAGE_SIZE);
+          } else {
+            setPosts((prev) =>
+              offsetValue === 0 ? [data as Post] : [...prev, data as Post]
+            );
+          }
+        })
+        .catch(() => toast.error("Failed to load feed"))
+        .finally(() => hideLoader());
+    };
+
 
   const handleLike = (post: Post) => {
     likePost(post.id)
@@ -112,8 +125,7 @@ const Feed: React.FC<Props> = ({ feedType }) => {
   if (message && posts.length === 0) return <div>{message}</div>;
   if (posts.length === 0) return <div>No posts available.</div>;
   return (
-    <div style={{ maxWidth: 600, margin: "auto", paddingTop: 30 }}>
-      <h2>{feedType.toUpperCase()} Feed</h2>
+    <div style={{ maxWidth: 600, margin: "auto" }}>
 
       {posts.map((post) => (
         <div
@@ -124,12 +136,12 @@ const Feed: React.FC<Props> = ({ feedType }) => {
             paddingBottom: 10,
           }}
         >
-          <div>
+          <div className="feed-author">
             <strong>{post.author_username || "Unknown"}</strong>
           </div>
-
-          <Media src={post.media_url || ""} />
-
+          <div className="feed-media">
+            <Media src={post.media_url || ""} />
+          </div>
           <div style={{ marginTop: 10 }}>{post.caption}</div>
           <div>Themes: {post.themes.filter(Boolean).join(", ")}</div>
 
@@ -171,7 +183,7 @@ const Feed: React.FC<Props> = ({ feedType }) => {
       ))}
 
       {feedType === "upload" && hasMore && (
-        <button onClick={fetchFeed} disabled={loading}>
+        <button onClick={() => fetchFeed(offset)} disabled={loading}>
           {loading ? "Loading…" : "Load More"}
         </button>
       )}
