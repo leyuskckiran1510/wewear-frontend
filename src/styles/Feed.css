@@ -65,6 +65,7 @@
 }
 
 .feed-media img,
+.feed-media pre,
 .feed-media video {
   width: 100%;
   height: auto;

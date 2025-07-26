@@ -4,6 +4,7 @@ import Login from "@/pages/Login";
 import Logout from "@/pages/Logout";
 import Profile from "@/pages/Profile";
 import Feed from "@/pages/Feed";
+import Upload from "@/pages/Upload";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import MainLayout from "@/layout/MainLayout";
 
@@ -41,7 +42,7 @@ const routes: RouteObject[] = [
       },
       {
         path: "/feeds/upload",
-        element: <Feed feedType="upload" />,
+        element: <Upload />,
       },
     ],
   },

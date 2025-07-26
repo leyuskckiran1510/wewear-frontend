@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { getFeed, getUploadFeed } from "@/services/feedService";
 import { Post, PaginatedPosts, FeedType } from "@/services/types";
 import { Media } from "@/components/CostumeTags";
@@ -22,8 +22,16 @@ const Feed: React.FC<Props> = ({ feedType }) => {
   const { showLoader, hideLoader } = useLoader();
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPostIndex, setCurrentPostIndex] = useState(0);
+  
+  // Refs for scroll management
+  const feedWrapperRef = useRef<HTMLDivElement>(null);
+  const postRefs = useRef<{ [key: string]: HTMLDivElement }>({});
+  const isScrollingRef = useRef(false);
+  const lastScrollTime = useRef(0);
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 5; // Smaller page size for smoother loading
 
   useEffect(() => {
     // Reset state when feedType changes
@@ -31,40 +39,129 @@ const Feed: React.FC<Props> = ({ feedType }) => {
     setOffset(0);
     setHasMore(true);
     setMessage("");
-    fetchFeed(0); // reset offset to 0
+    setCurrentPostIndex(0);
+    setIsLoading(false);
+    postRefs.current = {};
+    
+    // Initial load
+    fetchFeed(0);
   }, [feedType]);
 
-  const fetchFeed = (offsetValue: number = offset) => {
-    showLoader();
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const postElement = entry.target as HTMLElement;
+            const postIndex = parseInt(postElement.dataset.postIndex || "0");
+            setCurrentPostIndex(postIndex);
+            
+            // Load more posts when approaching the end
+            if (postIndex >= posts.length - 2 && hasMore && !isLoading) {
+              fetchFeed(offset);
+            }
+          }
+        });
+      },
+      {
+        root: feedWrapperRef.current,
+        threshold: 0.5,
+        rootMargin: "0px 0px -20% 0px"
+      }
+    );
 
-    const fetchFn =
-      feedType === "upload"
-        ? getUploadFeed(offsetValue, PAGE_SIZE)
-        : getFeed(feedType);
+    // Observe all post elements
+    Object.values(postRefs.current).forEach(postRef => {
+      if (postRef) observer.observe(postRef);
+    });
 
-    fetchFn
-      .then((data: any) => {
-        if ("detail" in data) {
-          setMessage(data.detail);
-          if (feedType === "upload") setHasMore(false);
-        } else if ("posts" in data) {
-          const paginated = data as PaginatedPosts;
-          setPosts((prev) =>
-            offsetValue === 0 ? paginated.posts : [...prev, ...paginated.posts]
-          );
-          setOffset(offsetValue + PAGE_SIZE);
-          setHasMore(paginated.posts.length === PAGE_SIZE);
-        } else {
-          setPosts((prev) =>
-            offsetValue === 0 ? [data as Post] : [...prev, data as Post]
-          );
-        }
-      })
-      .catch(() => toast.error("Failed to load feed"))
-      .finally(() => hideLoader());
-  };
+    return () => observer.disconnect();
+  }, [posts, hasMore, isLoading, offset]);
 
-  const handleLike = (post: Post) => {
+  // Smooth scroll management
+  const handleScroll = useCallback(() => {
+    if (!feedWrapperRef.current) return;
+    
+    const now = Date.now();
+    if (now - lastScrollTime.current < 100) return; // Throttle scroll events
+    lastScrollTime.current = now;
+
+    if (isScrollingRef.current) return;
+    
+    const wrapper = feedWrapperRef.current;
+    const scrollTop = wrapper.scrollTop;
+    const postHeight = wrapper.clientHeight;
+    const newIndex = Math.round(scrollTop / postHeight);
+    
+    if (newIndex !== currentPostIndex && newIndex >= 0 && newIndex < posts.length) {
+      setCurrentPostIndex(newIndex);
+    }
+  }, [currentPostIndex, posts.length]);
+
+  useEffect(() => {
+    const wrapper = feedWrapperRef.current;
+    if (!wrapper) return;
+
+    wrapper.addEventListener('scroll', handleScroll, { passive: true });
+    return () => wrapper.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  const fetchFeed = useCallback(async (offsetValue: number = offset) => {
+    if (isLoading || !hasMore) return;
+    
+    setIsLoading(true);
+    
+    // Only show loader for initial load
+    if (offsetValue === 0) {
+      showLoader();
+    }
+
+    try {
+      const fetchFn =
+        feedType === "upload"
+          ? getUploadFeed(offsetValue, PAGE_SIZE)
+          : getFeed(feedType);
+
+      const data = await fetchFn;
+      
+      if ("detail" in data) {
+        setMessage(data.detail);
+        if (feedType === "upload") setHasMore(false);
+      } else if ("posts" in data) {
+        const paginated = data as PaginatedPosts;
+        const newPosts = paginated.posts;
+        
+        setPosts((prev) => {
+          // Avoid duplicates by checking IDs
+          const existingIds = new Set(prev.map(p => p.id));
+          const uniqueNewPosts = newPosts.filter(p => !existingIds.has(p.id));
+          return offsetValue === 0 ? newPosts : [...prev, ...uniqueNewPosts];
+        });
+        
+        setOffset(offsetValue + PAGE_SIZE);
+        setHasMore(newPosts.length === PAGE_SIZE);
+      } else {
+        const singlePost = data as Post;
+        setPosts((prev) => {
+          const existingIds = new Set(prev.map(p => p.id));
+          if (existingIds.has(singlePost.id)) return prev;
+          return offsetValue === 0 ? [singlePost] : [...prev, singlePost];
+        });
+        setHasMore(false);
+      }
+    } catch (error) {
+      toast.error("Failed to load feed");
+      console.error("Feed fetch error:", error);
+    } finally {
+      setIsLoading(false);
+      if (offsetValue === 0) {
+        hideLoader();
+      }
+    }
+  }, [feedType, offset, isLoading, hasMore, showLoader, hideLoader]);
+
+  const handleLike = useCallback((post: Post) => {
     likePost(post.id)
       .then(() => {
         setPosts((prev) =>
@@ -80,9 +177,9 @@ const Feed: React.FC<Props> = ({ feedType }) => {
         );
       })
       .catch(() => toast.error("Failed to like post"));
-  };
+  }, []);
 
-  const handleSave = (post: Post) => {
+  const handleSave = useCallback((post: Post) => {
     savePost(post.id)
       .then(() => {
         setPosts((prev) =>
@@ -98,18 +195,18 @@ const Feed: React.FC<Props> = ({ feedType }) => {
         );
       })
       .catch(() => toast.error("Failed to save post"));
-  };
+  }, []);
 
-  const handleComment = (post: Post, text: string) => {
+  const handleComment = useCallback((post: Post, text: string) => {
     if (!text.trim()) return;
     commentPost(post.id, text)
       .then(() => {
         toast.success("Comment posted");
       })
       .catch(() => toast.error("Failed to post comment"));
-  };
+  }, []);
 
-  const handleShare = (post: Post) => {
+  const handleShare = useCallback((post: Post) => {
     sharePost(post.id)
       .then(({ slug }) => {
         navigator.clipboard.writeText(
@@ -118,7 +215,7 @@ const Feed: React.FC<Props> = ({ feedType }) => {
         toast.success("Share link copied!");
       })
       .catch(() => toast.error("Failed to share post"));
-  };
+  }, []);
 
   if (message && posts.length === 0) 
     return <div className="feed-message-container">{message}</div>;
@@ -128,9 +225,19 @@ const Feed: React.FC<Props> = ({ feedType }) => {
 
   return (
     <div className="feed-container">
-      <div className="feed-wrapper">
-        {posts.map((post) => (
-          <div key={post.id} className="feed-post">
+      <div 
+        className="feed-wrapper" 
+        ref={feedWrapperRef}
+      >
+        {posts.map((post, index) => (
+          <div
+            key={post.id}
+            className="feed-post"
+            ref={(el) => {
+              if (el) postRefs.current[post.id] = el;
+            }}
+            data-post-index={index}
+          >
             <div className="feed-post-inner">
               {/* Media Container */}
               <div className="feed-media-container">
@@ -162,8 +269,8 @@ const Feed: React.FC<Props> = ({ feedType }) => {
                     
                     {/* Themes */}
                     <div className="feed-themes">
-                      {post.themes.filter(Boolean).map((theme, index) => (
-                        <span key={index} className="feed-theme-tag">
+                      {post.themes.filter(Boolean).map((theme, themeIndex) => (
+                        <span key={themeIndex} className="feed-theme-tag">
                           #{theme}
                         </span>
                       ))}
@@ -258,15 +365,19 @@ const Feed: React.FC<Props> = ({ feedType }) => {
           </div>
         ))}
         
-        {/* Load More Button */}
-        {feedType === "upload" && hasMore && (
-          <div className="feed-load-more-container">
-            <button 
-              className="feed-load-more-btn" 
-              onClick={() => fetchFeed(offset)}
-            >
-              Load More
-            </button>
+        {/* Loading Indicator */}
+        {isLoading && posts.length > 0 && (
+          <div className="feed-loading-container">
+            <div className="feed-loading-spinner">
+              <div className="feed-spinner"></div>
+            </div>
+          </div>
+        )}
+        
+        {/* End of Feed Indicator */}
+        {!hasMore && posts.length > 0 && (
+          <div className="feed-end-indicator">
+            <p className="feed-end-text">You've reached the end!</p>
           </div>
         )}
       </div>

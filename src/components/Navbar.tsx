@@ -50,7 +50,7 @@ const Navbar = () => {
             </Link>
           </li>
           
-          <li className="navbar-item navbar-item-special">
+          <li className="navbar-item">
             <Link 
               to="/feeds/upload" 
               className={`navbar-link navbar-link-upload ${pathname === "/feeds/upload" ? "navbar-link-active" : ""}`}
