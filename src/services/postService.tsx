@@ -27,10 +27,7 @@ export const createPost = (data: CreatePostPayload): Promise<Post> => {
   
   formData.append('caption', data.caption);
   
-  // Handle themes array
-  data.themes.forEach((theme, index) => {
-    formData.append(`themes[${index}]`, theme);
-  });
+  formData.append('themes',data.themes)
   
   // Handle media URL
   if (data.media_url) {
