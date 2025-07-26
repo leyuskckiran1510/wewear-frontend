@@ -30,29 +30,32 @@ const Feed: React.FC<Props> = ({ feedType }) => {
   const postRefs = useRef<{ [key: string]: HTMLDivElement }>({});
   const isScrollingRef = useRef(false);
   const lastScrollTime = useRef(0);
-  const sentinelRef = useRef<HTMLDivElement>(null); // Sentinel for infinite scroll
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const PAGE_SIZE = 5; // Only used for upload feed
 
   // Fetch feed logic
-  const fetchFeed = useCallback(async (offsetValue?: number) => {
+  const fetchFeed = useCallback(async (isInitialLoad = false) => {
     if (isLoading || !hasMore) return;
     setIsLoading(true);
-    // Only show loader for initial load
-    if ((feedType === 'upload' && (offsetValue ?? offset) === 0) || (feedType !== 'upload' && posts.length === 0)) {
+
+    if (isInitialLoad) {
       showLoader();
     }
+
     try {
       if (feedType === "upload") {
-        const data = await getUploadFeed(offsetValue ?? offset, PAGE_SIZE);
+        const data = await getUploadFeed(offset, PAGE_SIZE);
         const newPosts = data.posts;
-        setPosts((prev) => {
-          // Avoid duplicates by checking IDs
-          const existingIds = new Set(prev.map((p: Post) => p.id));
-          const uniqueNewPosts = newPosts.filter((p: Post) => !existingIds.has(p.id));
-          return (offsetValue ?? offset) === 0 ? newPosts : [...prev, ...uniqueNewPosts];
+        
+        // Use functional updates to avoid dependency on `posts` and `offset`
+        setPosts((prevPosts) => {
+          const existingIds = new Set(prevPosts.map((p) => p.id));
+          const uniqueNewPosts = newPosts.filter((p) => !existingIds.has(p.id));
+          return isInitialLoad ? newPosts : [...prevPosts, ...uniqueNewPosts];
         });
-        setOffset((offsetValue ?? offset) + PAGE_SIZE);
+
+        setOffset((prevOffset) => prevOffset + PAGE_SIZE);
         setHasMore(newPosts.length === PAGE_SIZE);
       } else {
         const data = await getFeed(feedType);
@@ -61,12 +64,13 @@ const Feed: React.FC<Props> = ({ feedType }) => {
           setHasMore(false);
         } else {
           const singlePost = data as Post;
-          setPosts((prev) => {
-            const existingIds = new Set(prev.map((p: Post) => p.id));
-            if (existingIds.has(singlePost.id)) return prev;
-            return [...prev, singlePost];
+          // Use functional update to avoid dependency on `posts`
+          setPosts((prevPosts) => {
+            const existingIds = new Set(prevPosts.map((p) => p.id));
+            if (existingIds.has(singlePost.id)) return prevPosts;
+            return [...prevPosts, singlePost];
           });
-          setHasMore(true); // Always allow fetching more for getFeed
+          setHasMore(true); // Keep fetching for non-upload feeds
         }
       }
     } catch (error) {
@@ -74,11 +78,12 @@ const Feed: React.FC<Props> = ({ feedType }) => {
       console.error("Feed fetch error:", error);
     } finally {
       setIsLoading(false);
-      if ((feedType === 'upload' && (offsetValue ?? offset) === 0) || (feedType !== 'upload' && posts.length === 0)) {
+      if (isInitialLoad) {
         hideLoader();
       }
     }
-  }, [feedType, offset, isLoading, hasMore, showLoader, hideLoader, posts.length]);
+  }, [feedType, isLoading, hasMore, offset, showLoader, hideLoader]); // `offset` is needed for getUploadFeed call
+
 
   useEffect(() => {
     // Reset state when feedType changes
@@ -114,7 +119,6 @@ const Feed: React.FC<Props> = ({ feedType }) => {
     return () => observer.disconnect();
   }, [hasMore, isLoading, fetchFeed]);
 
-  // Intersection Observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -123,8 +127,6 @@ const Feed: React.FC<Props> = ({ feedType }) => {
             const postElement = entry.target as HTMLElement;
             const postIndex = parseInt(postElement.dataset.postIndex || "0");
             setCurrentPostIndex(postIndex);
-            
-            // Load more posts when approaching the end
             if (postIndex >= posts.length - 2 && hasMore && !isLoading) {
               fetchFeed(offset);
             }
@@ -134,7 +136,7 @@ const Feed: React.FC<Props> = ({ feedType }) => {
       {
         root: feedWrapperRef.current,
         threshold: 0.5,
-        rootMargin: "0px 0px -20% 0px"
+        rootMargin: "0px 0px 0px 0px"
       }
     );
 
@@ -144,14 +146,14 @@ const Feed: React.FC<Props> = ({ feedType }) => {
     });
 
     return () => observer.disconnect();
-  }, [posts, hasMore, isLoading, offset]);
+  }, [posts]);
 
   // Smooth scroll management
   const handleScroll = useCallback(() => {
     if (!feedWrapperRef.current) return;
     
     const now = Date.now();
-    if (now - lastScrollTime.current < 100) return; // Throttle scroll events
+    if (now - lastScrollTime.current < 100) return;
     lastScrollTime.current = now;
 
     if (isScrollingRef.current) return;
@@ -393,7 +395,6 @@ const Feed: React.FC<Props> = ({ feedType }) => {
             <p className="feed-end-text">You've reached the end!</p>
           </div>
         )}
-        {/* Sentinel for infinite scroll */}
         <div ref={sentinelRef} style={{ height: 1 }} />
       </div>
     </div>
