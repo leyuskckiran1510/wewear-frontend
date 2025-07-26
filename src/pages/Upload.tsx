@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Upload as UploadIcon, Link as LinkIcon, X, ArrowRight, ArrowLeft, Camera } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import  toast  from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createPost, createPostWithMultipleFiles } from '../services/postService';
+import { createPost, createPostWithMultipleFiles } from '@/services/postService';
 import "@/styles/Upload.css";
 
 interface UploadedFile {
@@ -111,11 +111,10 @@ const Upload: React.FC = () => {
         toast.error("Unsupported file type.");
         return;
     }
-    const newFiles: UploadedFile[] = validFiles.map(file => ({
+    const newFiles = validFiles.map(file => ({
         file,
         preview: URL.createObjectURL(file),
-        type: file.type.startsWith('image/') ? 'image' : 'video',
-        themes: [...themes],
+        type: file.type.startsWith('image/') ? 'image' : 'video' as 'image' | 'video'
     }));
     setUploadedFiles(prev => [...prev, ...newFiles]);
   };
@@ -138,8 +137,7 @@ const Upload: React.FC = () => {
       canvas.toBlob((blob) => {
         if (blob) {
           const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
-          const newFile: UploadedFile = { file, preview: URL.createObjectURL(blob), type: 'image', themes: [...themes] };
-          setUploadedFiles(prev => [...prev, newFile]);
+          setUploadedFiles(prev => [...prev, { file, preview: URL.createObjectURL(blob), type: 'image' }]);
           setShowCamera(false);
           toast.success("Photo captured!");
         }
@@ -163,8 +161,7 @@ const Upload: React.FC = () => {
         mediaRecorderRef.current.onstop = () => {
             const blob = new Blob(recordedChunksRef.current, { type: mimeType });
             const file = new File([blob], `video-${Date.now()}.${mimeType.split('/')[1].split(';')[0]}`, { type: mimeType });
-            const newFile: UploadedFile = { file, preview: URL.createObjectURL(blob), type: 'video', themes: [...themes] };
-            setUploadedFiles(prev => [...prev, newFile]);
+            setUploadedFiles(prev => [...prev, { file, preview: URL.createObjectURL(blob), type: 'video' }]);
             setShowCamera(false);
             toast.success("Video recorded!");
         };
@@ -200,19 +197,9 @@ const Upload: React.FC = () => {
     try {
       let result;
       if (uploadedFiles.length > 1) {
-        result = await createPostWithMultipleFiles(
-          caption,
-          themes,
-          uploadedFiles.map(f => f.file),
-          mediaUrl || undefined
-        );
+        result = await createPostWithMultipleFiles(caption, themes, uploadedFiles.map(f => f.file), mediaUrl || undefined);
       } else if (uploadedFiles.length === 1) {
-        result = await createPost({
-          caption,
-          themes,
-          media_file: uploadedFiles[0].file,
-          media_url: mediaUrl || null
-        });
+        result = await createPost({ caption, themes, media_file: uploadedFiles[0].file, media_url: mediaUrl || null });
       } else if (mediaUrl) {
         result = await createPost({ caption, themes, media_url: mediaUrl });
       } else {
@@ -246,7 +233,7 @@ const Upload: React.FC = () => {
     out: { opacity: 0, x: -50 },
   };
 
-  const pageTransition = { type: "tween" as const, duration: 0.4 };
+  const pageTransition = { type: 'tween', ease: 'circOut', duration: 0.4 };
 
   return (
     <div className="upload-container">

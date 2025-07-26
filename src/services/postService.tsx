@@ -24,19 +24,13 @@ export interface Post {
 
 export const createPost = (data: CreatePostPayload): Promise<Post> => {
   const formData = new FormData();
-  
-  formData.append('caption', data.caption);
-  
-  formData.append('themes',data.themes)
-  
-  // Handle media URL
-  if (data.media_url) {
-    formData.append('media_url', data.media_url);
-  } else {
-    formData.append('media_url', '');
+  const post_data = {
+        "caption":data.caption,
+        "themes":data.themes,
+        "media_url":data.media_url?data.media_url:null,
   }
-  
-  // Handle media file
+
+  formData.append("post",JSON.stringify( post_data));
   if (data.media_file) {
     formData.append('media_file', data.media_file);
   }
